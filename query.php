@@ -4,9 +4,16 @@ if(file_exists('export.xls')){
     unlink('export.xls');
 }
 
-
-$connection = @mysqli_connect("127.0.0.1","root","root");
-mysqli_select_db($connection,"pm25");
+require('mysqlCon.php');
+//$connection = @mysqli_connect("127.0.0.1","root","root");
+////echo $connection;
+//mysqli_select_db($connection,"pm25");
+session_start();
+if(empty($_SESSION['userinfo']['uemail'])){
+    echo "didn't loged in, please return";
+    echo "<br><form class=\"form-start\" action=\"query.html\"><button type=\"submit\" id=\"return\">RETURN TO LOGIN</button></form>";
+    exit();
+}
 $user=$_POST["UserId"];
 $sday=$_POST["SDay"];
 $eday=$_POST["EDay"];
@@ -22,6 +29,17 @@ while($row = mysqli_fetch_array($idResult)){
     $userId = $row['id'];
 }
 
+$userType = 0; //1-iOS, 0-android
+$typesql = "SELECT APP_version FROM pm25.data_mobile_new where userid='$userId' order by time_point desc limit 1;";
+$typeResult = mysqli_query($connection, $typesql);
+$userTypeStr="";
+while($row = mysqli_fetch_array($typeResult)){
+    $userTypeStr = $row['APP_version'];
+}
+if($userTypeStr && $userTypeStr[0] == 'i'){
+    $userType = 1;
+}
+//echo $userType;
 
 if($userId){
     $startDay=$sday . ' 00:00:00';
@@ -32,8 +50,12 @@ if($userId){
     $result1=mysqli_query($connection, $sqlstr1);
     $result_num=mysqli_num_rows($result1);
 
-    echo $result_num . " records found, about " . number_format(($result_num)/(7.2*$days), 2) . "% data was recorded in these days";
-    echo "<br><form class=\"form-start\" action=\"query.html\"><button type=\"submit\" id=\"return\">return</button></form>";
+    $percent = ($result_num)/(7.2*$days);
+    if(!$userType){
+        $percent = $percent / 2;
+    }
+    echo $result_num . " records found, about " . number_format($percent, 2) . "% data was recorded in these days";
+    echo "<br><form class=\"form-start\" action=\"queryHome.php\"><button type=\"submit\" id=\"return\">return</button></form>";
 
     echo "<form method=\"get\" action=\"export.xls\"><button type=\"submit\">Download the Excel File!</button></form>";
 
@@ -97,8 +119,7 @@ if($userId){
     echo "</table>";
 }else{
     echo "Didn't find this user";
+    echo "<br><form class=\"form-start\" action=\"queryHome.php\"><button type=\"submit\" id=\"return\">return</button></form>";
 }
 
 ?>
-
-
