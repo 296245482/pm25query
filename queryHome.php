@@ -7,7 +7,7 @@
  */
 
 
-
+session_start();
 if(empty($_SESSION['userinfo']['uemail'])){
     $user=$_POST["UserId"];
     $password=$_POST["Password"];
